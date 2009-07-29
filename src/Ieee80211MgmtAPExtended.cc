@@ -160,8 +160,16 @@ void Ieee80211MgmtAPExtended::receiveChangeNotification(int category, const cPol
 
     if (category == NF_RADIO_CHANNEL_CHANGED)
     {
-        EV << "updating channel number\n";
-        channelNumber = check_and_cast<RadioState *>(details)->getChannelNumber();
+    	RadioState* rs = check_and_cast<RadioState *>(details);
+
+    	cModule* radio = simulation.getModule(rs->getRadioId());
+    	if (radio!=NULL) {
+    		if (radio->getParentModule() == this->getParentModule()) {
+    			// if the radio that generate the notification is contained in the same module of this mgmt, update the channel
+    			this->channelNumber = rs->getChannelNumber();
+    			EV << "updating channel number to " << channelNumber << endl;
+    		}
+    	}
     }
 }
 

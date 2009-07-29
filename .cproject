@@ -21,7 +21,7 @@
 <folderInfo id="org.omnetpp.cdt.gnu.config.debug.459293878." name="/" resourcePath="">
 <toolChain id="org.omnetpp.cdt.gnu.toolchain.debug.1402436461" name="GCC for OMNeT++" superClass="org.omnetpp.cdt.gnu.toolchain.debug">
 <targetPlatform binaryParser="org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.MachO;org.eclipse.cdt.core.PE" id="org.omnetpp.cdt.targetPlatform.320002103" isAbstract="false" name="Windows, Linux, Mac" osList="win32,linux,macosx" superClass="org.omnetpp.cdt.targetPlatform"/>
-<builder id="org.omnetpp.cdt.gnu.builder.debug.1689882647" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="OMNeT++ Make Builder (opp_makemake)" superClass="org.omnetpp.cdt.gnu.builder.debug"/>
+<builder enableAutoBuild="true" id="org.omnetpp.cdt.gnu.builder.debug.1689882647" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="OMNeT++ Make Builder (opp_makemake)" superClass="org.omnetpp.cdt.gnu.builder.debug"/>
 <tool id="cdt.managedbuild.tool.gnu.archiver.base.1483201328" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 <tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.470531563" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
 <inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1630795175" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
