@@ -101,7 +101,8 @@ void Ieee80211MgmtSTAExtended::initialize(int stage)
 		mgmtBeaconsArrival.setName("Beacons Arrival");
 		// mgmt queue len size
 		mgmtQueueLenVec.setName("Mgmt queue length");
-
+		// beacons rx power
+		rcvdPowerVector.setName("Beacons RxPower");
     }
 }
 
@@ -152,13 +153,13 @@ void Ieee80211MgmtSTAExtended::handleTimer(cMessage *msg)
         delete msg;
         if (scanning.busyChannelDetected)
         {
-            EV << "Busy channel detected during minChannelTime, continuing listening until maxChannelTime elapses\n";
+            EV << "******************* Busy channel detected during minChannelTime, continuing listening until maxChannelTime elapses\n";
             cMessage *timerMsg = new cMessage("maxChannelTime", MK_SCAN_MAXCHANNELTIME);
             scheduleAt(simTime()+scanning.maxChannelTime - scanning.minChannelTime, timerMsg);
         }
         else
         {
-            EV << "Channel was empty during minChannelTime, going to next channel\n";
+        	EV << "******************* Channel was empty during minChannelTime, going to next channel\n";
             bool done = scanNextChannel();
             if (done)
                 sendScanConfirm(); // send back response to agents' "scan" command
@@ -483,10 +484,15 @@ bool Ieee80211MgmtSTAExtended::scanNextChannel()
         return true; // we're done
     }
 
+    int currentCh = scanning.channelList[scanning.currentChannelIndex];
+	//std::cout << simTime() << " " << myAddress << " *** END SCANNING CHANNEL " << currentCh << endl;
+
     // tune to next channel
     int newChannel = scanning.channelList[++scanning.currentChannelIndex];
     changeChannel(newChannel);
     scanning.busyChannelDetected = false;
+
+    //std::cout << simTime() << " " << myAddress << "*** START SCANNING CHANNEL " << newChannel << endl;
 
     if (scanning.activeScan)
     {
@@ -514,7 +520,10 @@ void Ieee80211MgmtSTAExtended::sendProbeRequest()
 
 void Ieee80211MgmtSTAExtended::sendScanConfirm()
 {
-    EV << "Scanning complete, found " << apList.size() << " APs, sending confirmation to agent\n";
+	if (apList.size()>0)
+    {
+		EV << "Scanning complete, found " << apList.size() << " APs, sending confirmation to agent\n";
+    }
 
     // copy apList contents into a ScanConfirm primitive and send it back
     int n = apList.size();
@@ -856,8 +865,19 @@ void Ieee80211MgmtSTAExtended::handleDisassociationFrame(Ieee80211Disassociation
 
 void Ieee80211MgmtSTAExtended::handleBeaconFrame(Ieee80211BeaconFrame *frame)
 {
+	std::cout << "Ieee80211MgmtSTAExtended::handleBeaconFrame" << endl;
 
-	 // Paula Uribe: Log the beacon arrival
+	// Paula Uribe: get control info from beacon frame
+	Radio80211aControlInfo *ctrlInfo = (Radio80211aControlInfo*)frame->removeControlInfo();
+
+	std::cout << "Ieee80211MgmtSTAExtended::handleBeaconFrame, CTRLiNFO EXTRACTED" << endl;
+
+	// Paula Uribe: extract rxPower
+	std::cout << "Ieee80211MgmtSTAExtended::handleBeaconFrame, CTRLiNFO DELETED" << endl;
+	double rxPower = ctrlInfo->getRecPow();
+	std::cout << "rxPower = " << rxPower << endl;
+
+	// Paula Uribe: Log the beacon arrival
 
 	cModule *mod;
 	for (mod = getParentModule(); mod != 0; mod = mod->getParentModule())
@@ -869,14 +889,20 @@ void Ieee80211MgmtSTAExtended::handleBeaconFrame(Ieee80211BeaconFrame *frame)
 	int id = mod->getIndex();
 	mgmtBeaconsArrival.record(id);
 
-
     EV << "Received Beacon frame\n";
     storeAPInfo(frame->getTransmitterAddress(), frame->getBody());
+
+	// update rx power in the ap info
+    APInfo *ap = lookupAP(frame->getTransmitterAddress());
+    ap->rxPower = rxPower;
 
     // if it is out associate AP, restart beacon timeout
     if (isAssociated && frame->getTransmitterAddress()==assocAP.address)
     {
         EV << "Beacon is from associated AP, restarting beacon timeout timer\n";
+
+    	rcvdPowerVector.record(rxPower);
+
         ASSERT(assocAP.beaconTimeoutMsg!=NULL);
         cancelEvent(assocAP.beaconTimeoutMsg);
 

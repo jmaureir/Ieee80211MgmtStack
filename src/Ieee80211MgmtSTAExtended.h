@@ -5,6 +5,7 @@
 #include "Ieee80211MgmtBase.h"
 #include "NotificationBoard.h"
 #include "Ieee80211Primitives_m.h"
+#include "Radio80211aControlInfo_m.h"
 
 class INET_API Ieee80211MgmtSTAExtended : public Ieee80211MgmtBase
 {
@@ -63,11 +64,16 @@ class INET_API Ieee80211MgmtSTAExtended : public Ieee80211MgmtBase
 	cOutVector connStates;
 	MGMT_STATES mgmt_state;
 
-	// Paula Uribe: new vector for record the beacons arrival and mgmt queue len
+	// Paula Uribe: new vector for record the beacons arrival and mgmt queue length
 	cOutVector mgmtBeaconsArrival;
 	cOutVector mgmtQueueLenVec;
+	cOutVector rcvdPowerVector;
+
 
   protected:
+	// Paula Uribe: add radio reference
+	cModule* hostName;
+
     NotificationBoard *nb;
 
     // number of channels in ChannelControl -- used if we're told to scan "all" channels
