@@ -102,7 +102,8 @@ void Ieee80211MgmtSTAExtended::initialize(int stage)
 		// mgmt queue len size
 		mgmtQueueLenVec.setName("Mgmt queue length");
 		// beacons rx power
-		rcvdPowerVector.setName("Beacons RxPower");
+		rcvdPowerVectormW.setName("Beacons RxPower mW");
+		rcvdPowerVectordB.setName("Beacons RxPower dB");
     }
 }
 
@@ -900,8 +901,11 @@ void Ieee80211MgmtSTAExtended::handleBeaconFrame(Ieee80211BeaconFrame *frame)
     if (isAssociated && frame->getTransmitterAddress()==assocAP.address)
     {
         EV << "Beacon is from associated AP, restarting beacon timeout timer\n";
+        std::cout << "++++++++++++++++ Beacon is from associated AP, restarting beacon timeout timer\n";
 
-    	rcvdPowerVector.record(rxPower);
+    	double rxPWdB = 10 * log(rxPower);
+    	rcvdPowerVectordB.record(rxPWdB);
+    	rcvdPowerVectormW.record(rxPower);
 
         ASSERT(assocAP.beaconTimeoutMsg!=NULL);
         cancelEvent(assocAP.beaconTimeoutMsg);

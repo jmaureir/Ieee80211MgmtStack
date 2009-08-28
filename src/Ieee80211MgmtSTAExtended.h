@@ -67,7 +67,9 @@ class INET_API Ieee80211MgmtSTAExtended : public Ieee80211MgmtBase
 	// Paula Uribe: new vector for record the beacons arrival and mgmt queue length
 	cOutVector mgmtBeaconsArrival;
 	cOutVector mgmtQueueLenVec;
-	cOutVector rcvdPowerVector;
+	cOutVector rcvdPowerVectormW;
+	cOutVector rcvdPowerVectordB;
+
 
 
   protected:
