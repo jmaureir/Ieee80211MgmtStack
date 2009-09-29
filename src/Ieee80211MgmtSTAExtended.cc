@@ -875,7 +875,11 @@ void Ieee80211MgmtSTAExtended::handleBeaconFrame(Ieee80211BeaconFrame *frame)
 
 	// Paula Uribe: extract rxPower
 	std::cout << "Ieee80211MgmtSTAExtended::handleBeaconFrame, CTRLiNFO DELETED" << endl;
-	double rxPower = ctrlInfo->getRecPow();
+	double rxPower = 0;
+	if (ctrlInfo!=NULL) {
+		rxPower = ctrlInfo->getRecPow();
+	}
+
 	std::cout << "rxPower = " << rxPower << endl;
 
 	// Paula Uribe: Log the beacon arrival

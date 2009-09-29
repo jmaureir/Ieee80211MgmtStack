@@ -227,8 +227,8 @@ void Ieee80211MgmtAPExtended::handleDataFrame(Ieee80211DataFrame *frame)
         	delete frame;
 			send(payload,"uppergateOut");
         }
-        // JcM Fix: avoid the redistribution of the message to the radio
-        //distributeReceivedDataFrame(frame);
+        // JcM Fix: we need to redistribute the frame to the STAs
+        distributeReceivedDataFrame(frame);
         return;
     }
 
