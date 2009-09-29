@@ -90,7 +90,7 @@ void Ieee80211MgmtSTAExtended::initialize(int stage)
         WATCH(assocAP);
         WATCH_LIST(apList);
 
-        std::cout << "MAX_BEACON_MISSED for Station " << this->getFullName() << ": " << this->max_beacons_missed << endl;
+        EV << "MAX_BEACON_MISSED for Station " << this->getFullName() << ": " << this->max_beacons_missed << endl;
 
     	// connectivity initial state
 		connStates.setName("Connectivity States");
@@ -326,8 +326,6 @@ void Ieee80211MgmtSTAExtended::changeChannel(int channelNum)
 void Ieee80211MgmtSTAExtended::beaconLost()
 {
     EV << "Missed a few consecutive beacons -- AP is considered lost\n";
-
-    std::cout << "beacon lost max reached.. AP is considered lost." << std::endl;
 
 	nb->fireChangeNotification(NF_L2_BEACON_LOST, myEntry);  //XXX use InterfaceEntry as detail, etc...
 }
@@ -620,7 +618,6 @@ void Ieee80211MgmtSTAExtended::processDisassociateCommand(Ieee80211Prim_Disassoc
 
 void Ieee80211MgmtSTAExtended::disassociate()
 {
-    std::cout << "Disassociating from AP address=" << assocAP.address << "\n";
     ASSERT(isAssociated);
     isAssociated = false;
     delete cancelEvent(assocAP.beaconTimeoutMsg);
@@ -866,21 +863,13 @@ void Ieee80211MgmtSTAExtended::handleDisassociationFrame(Ieee80211Disassociation
 
 void Ieee80211MgmtSTAExtended::handleBeaconFrame(Ieee80211BeaconFrame *frame)
 {
-	std::cout << "Ieee80211MgmtSTAExtended::handleBeaconFrame" << endl;
-
 	// Paula Uribe: get control info from beacon frame
 	Radio80211aControlInfo *ctrlInfo = (Radio80211aControlInfo*)frame->removeControlInfo();
 
-	std::cout << "Ieee80211MgmtSTAExtended::handleBeaconFrame, CTRLiNFO EXTRACTED" << endl;
-
-	// Paula Uribe: extract rxPower
-	std::cout << "Ieee80211MgmtSTAExtended::handleBeaconFrame, CTRLiNFO DELETED" << endl;
 	double rxPower = 0;
 	if (ctrlInfo!=NULL) {
 		rxPower = ctrlInfo->getRecPow();
 	}
-
-	std::cout << "rxPower = " << rxPower << endl;
 
 	// Paula Uribe: Log the beacon arrival
 
@@ -905,7 +894,6 @@ void Ieee80211MgmtSTAExtended::handleBeaconFrame(Ieee80211BeaconFrame *frame)
     if (isAssociated && frame->getTransmitterAddress()==assocAP.address)
     {
         EV << "Beacon is from associated AP, restarting beacon timeout timer\n";
-        std::cout << "++++++++++++++++ Beacon is from associated AP, restarting beacon timeout timer\n";
 
     	double rxPWdB = 10 * log(rxPower);
     	rcvdPowerVectordB.record(rxPWdB);
