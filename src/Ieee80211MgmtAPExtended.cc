@@ -218,17 +218,17 @@ void Ieee80211MgmtAPExtended::handleDataFrame(Ieee80211DataFrame *frame)
     if (frame->getAddress3().isBroadcast())
     {
         EV << "Handling broadcast frame\n";
+        // JcM Fix: Redistribute the Frame to the associated STAs
+        distributeReceivedDataFrame(frame->dup());
         if (hasRelayUnit) {
         	// if we have relayUnit, encap the packet in a ethernet frame
             send(convertToEtherFrame((Ieee80211DataFrame *)frame->dup()), "uppergateOut");
         } else {
         	// JcM add: we dont have a relayunit, so, send the decap packet
         	cPacket* payload = frame->decapsulate();
-        	delete frame;
 			send(payload,"uppergateOut");
         }
-        // JcM Fix: we need to redistribute the frame to the STAs
-        distributeReceivedDataFrame(frame);
+        delete(frame);
         return;
     }
 
