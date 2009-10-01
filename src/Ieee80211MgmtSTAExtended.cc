@@ -54,17 +54,6 @@ std::ostream& operator<<(std::ostream& os, const Ieee80211MgmtSTAExtended::APInf
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const Ieee80211MgmtSTAExtended::AssociatedAPInfo& assocAP)
-{
-    os << "AP addr=" << assocAP.address
-       << " chan=" << assocAP.channel
-       << " ssid=" << assocAP.ssid
-       << " beaconIntvl=" << assocAP.beaconInterval
-       << " receiveSeq="  << assocAP.receiveSequence
-       << " rxPower=" << assocAP.rxPower;
-    return os;
-}
-
 void Ieee80211MgmtSTAExtended::initialize(int stage)
 {
     Ieee80211MgmtBase::initialize(stage);
@@ -890,9 +879,20 @@ void Ieee80211MgmtSTAExtended::handleBeaconFrame(Ieee80211BeaconFrame *frame)
     APInfo *ap = lookupAP(frame->getTransmitterAddress());
     ap->rxPower = rxPower;
 
-    // if it is out associate AP, restart beacon timeout
+    // if it is our associate AP, restart beacon timeout and log the rx_power
     if (isAssociated && frame->getTransmitterAddress()==assocAP.address)
     {
+
+    	// update the rx_power in the Associated AP info
+    	this->assocAP.rxPower = rxPower;
+    	// notify the notificationBoard about the updated associated
+    	// AP info
+
+    	// notify that we have updated information about the associated AP
+    	AssociatedAPInfo* nf_ap_info = new AssociatedAPInfo(this->assocAP);
+    	nb->fireChangeNotification(NF_L2_ASSOCIATED_AP_UPDATE,nf_ap_info);
+    	delete(nf_ap_info);
+
         EV << "Beacon is from associated AP, restarting beacon timeout timer\n";
 
     	double rxPWdB = 10 * log(rxPower);
@@ -904,8 +904,6 @@ void Ieee80211MgmtSTAExtended::handleBeaconFrame(Ieee80211BeaconFrame *frame)
 
         scheduleAt(simTime()+this->max_beacons_missed*assocAP.beaconInterval, assocAP.beaconTimeoutMsg);
 
-        //APInfo *ap = lookupAP(frame->getTransmitterAddress());
-        //ASSERT(ap!=NULL);
     }
 
     delete frame;
@@ -942,8 +940,5 @@ void Ieee80211MgmtSTAExtended::storeAPInfo(const MACAddress& address, const Ieee
     ap->ssid = body.getSSID();
     ap->supportedRates = body.getSupportedRates();
     ap->beaconInterval = body.getBeaconInterval();
-
-    //XXX where to get this from?
-    //ap->rxPower = ...
 }
 
