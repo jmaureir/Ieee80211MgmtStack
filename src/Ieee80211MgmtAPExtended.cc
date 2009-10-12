@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2006 Andras Varga
+// Copyright (C) 2006 Andras Varga and Juan-Carlos Maureira
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -76,43 +76,25 @@ void Ieee80211MgmtAPExtended::handleTimer(cMessage *msg)
     }
 }
 
-void Ieee80211MgmtAPExtended::handleUpperMessage(cPacket *msg)
-{
-	if (hasRelayUnit) {
+// Incoming message must come always decapsulated already.
+// for relays units, use a EtherEncap module
+void Ieee80211MgmtAPExtended::handleUpperMessage(cPacket *msg) {
 
-		// must be an EtherFrame frame arriving from MACRelayUnit, that is,
-		// bridged from another interface of the AP (probably Ethernet).
-		EtherFrame *etherframe = check_and_cast<EtherFrame *>(msg);
+	EV << "Handling upper message from Network Layer" << endl;
 
-		// check we really have a STA with that dest address
-		STAList::iterator it = staList.find(etherframe->getDest());
-		if (it==staList.end() || it->second.status!=ASSOCIATED)
-		{
-			EV << "STA with MAC address " << etherframe->getDest() << " not associated with this AP, dropping frame\n";
-			delete etherframe; // XXX count drops?
-			return;
-		}
+	Ieee802Ctrl* ctrl = check_and_cast<Ieee802Ctrl*>(msg->removeControlInfo());
 
-		// convert Ethernet frame
-		Ieee80211DataFrame *frame = convertFromEtherFrame(etherframe);
-		sendOrEnqueue(frame);
-	} else {
-		// JcM Add: we assume the packet comes in raw way.
-
-		EV << "Handling upper message from Network Layer" << endl;
-
-		Ieee802Ctrl* ctrl = check_and_cast<Ieee802Ctrl*>(msg->removeControlInfo());
-
+	if (ctrl!=NULL) {
 		if (ctrl->getDest()!= MACAddress::BROADCAST_ADDRESS) {
 			// check if the destination address is our STA (or broadcast)
 			STAList::iterator it = staList.find(ctrl->getDest());
-			if (it==staList.end() || it->second.status!=ASSOCIATED)
-			{
+			if (it==staList.end() || it->second.status!=ASSOCIATED) {
 				EV << "STA with MAC address " << ctrl->getDest() << " not associated with this AP, dropping frame\n";
 				delete msg; // XXX count drops?
 				return;
 			}
 		}
+
 		Ieee80211DataFrame *frame = new Ieee80211DataFrame(msg->getName());
 		frame->setFromDS(true);
 
@@ -123,30 +105,11 @@ void Ieee80211MgmtAPExtended::handleUpperMessage(cPacket *msg)
 		// encapsulate payload
 		frame->encapsulate(msg);
 		sendOrEnqueue(frame);
+	} else {
+		error("Incoming packet has no Control Info data (src and dst)");
 	}
 }
 
-#if 0
-void Ieee80211MgmtAPExtended::handleUpperMessage(cPacket *msg)
-{
-    // must be an EtherFrame frame arriving from MACRelayUnit, that is,
-    // bridged from another interface of the AP (probably Ethernet).
-    EtherFrame *etherframe = check_and_cast<EtherFrame *>(msg);
-
-    // check we really have a STA with that dest address
-    STAList::iterator it = staList.find(etherframe->getDest());
-    if (it==staList.end() || it->second.status!=ASSOCIATED)
-    {
-        EV << "STA with MAC address " << etherframe->getDest() << " not associated with this AP, dropping frame\n";
-        delete etherframe; // XXX count drops?
-        return;
-    }
-
-    // convert Ethernet frame
-    Ieee80211DataFrame *frame = convertFromEtherFrame(etherframe);
-    sendOrEnqueue(frame);
-}
-#endif
 
 void Ieee80211MgmtAPExtended::handleCommand(int msgkind, cPolymorphic *ctrl)
 {
@@ -215,39 +178,48 @@ void Ieee80211MgmtAPExtended::handleDataFrame(Ieee80211DataFrame *frame)
     }
 
     // handle broadcast frames
-    if (frame->getAddress3().isBroadcast())
-    {
+    if (frame->getAddress3().isBroadcast()) {
         EV << "Handling broadcast frame\n";
         // JcM Fix: Redistribute the Frame to the associated STAs
         distributeReceivedDataFrame(frame->dup());
-        if (hasRelayUnit) {
-        	// if we have relayUnit, encap the packet in a ethernet frame
-            send(convertToEtherFrame((Ieee80211DataFrame *)frame->dup()), "uppergateOut");
-        } else {
-        	// JcM add: we dont have a relayunit, so, send the decap packet
-        	cPacket* payload = frame->decapsulate();
-			send(payload,"uppergateOut");
-        }
+
+        // Broadcast the frame to the upper layers
+		// JcM Fix: we pass the payload as it is to the upper layers.
+        // if there is an relay unit, use a EtherEncap Module
+		cPacket* payload = frame->decapsulate();
+
+		// set the control info
+		Ieee802Ctrl *ctrl = new Ieee802Ctrl();
+		ctrl->setSrc(frame->getAddress4());
+		ctrl->setDest(frame->getAddress3());
+
+		payload->setControlInfo(ctrl);
+
+		send(payload,"uppergateOut");
+
         delete(frame);
         return;
     }
 
-    // look up destination address in our STA list
+    // the data frame is not broadcast.
+    // first, check if we have the destination among our conntected STAs
+
     STAList::iterator it = staList.find(frame->getAddress3());
-    if (it==staList.end())
-    {
-        // not our STA -- pass up frame to relayUnit for LAN bridging if we have one
-        if (hasRelayUnit) {
-            send(convertToEtherFrame(frame), "uppergateOut");
-        } else {
-			// JcM add: we dont have a relayunit, so, send the decap packet
-        	cPacket* payload = frame->decapsulate();
-			delete frame;
-			send(payload,"uppergateOut");
-        }
-    }
-    else
-    {
+    if (it==staList.end()) {
+        // not our STA, only pass the frame to the upper layers as it is.
+        // if there is an relay unit, use a EtherEncap Module
+		cPacket* payload = frame->decapsulate();
+
+		// set the control info
+		Ieee802Ctrl *ctrl = new Ieee802Ctrl();
+		ctrl->setSrc(frame->getAddress4());
+		ctrl->setDest(frame->getAddress3());
+
+		payload->setControlInfo(ctrl);
+		delete frame;
+
+		send(payload,"uppergateOut");
+    } else {
         // dest address is our STA, but is it already associated?
         if (it->second.status == ASSOCIATED)
             distributeReceivedDataFrame(frame); // send it out to the destination STA
@@ -257,54 +229,6 @@ void Ieee80211MgmtAPExtended::handleDataFrame(Ieee80211DataFrame *frame)
         }
     }
 }
-#if 0
-
-void Ieee80211MgmtAPExtended::handleDataFrame(Ieee80211DataFrame *frame)
-{
-    // check toDS bit
-    if (!frame->getToDS())
-    {
-        // looks like this is not for us - discard
-        EV << "Frame is not for us (toDS=false) -- discarding\n";
-        delete frame;
-        return;
-    }
-
-    // handle broadcast frames
-    if (frame->getAddress3().isBroadcast())
-    {
-        EV << "Handling broadcast frame\n";
-        if (hasRelayUnit)
-            send(convertToEtherFrame((Ieee80211DataFrame *)frame->dup()), "uppergateOut");
-        distributeReceivedDataFrame(frame);
-        return;
-    }
-
-    // look up destination address in our STA list
-    STAList::iterator it = staList.find(frame->getAddress3());
-    if (it==staList.end())
-    {
-        // not our STA -- pass up frame to relayUnit for LAN bridging if we have one
-        if (hasRelayUnit)
-            send(convertToEtherFrame(frame), "uppergateOut");
-        else {
-            EV << "Frame's destination address is not in our STA list -- dropping frame\n";
-            delete frame;
-        }
-    }
-    else
-    {
-        // dest address is our STA, but is it already associated?
-        if (it->second.status == ASSOCIATED)
-            distributeReceivedDataFrame(frame); // send it out to the destination STA
-        else {
-            EV << "Frame's destination STA is not in associated state -- dropping frame\n";
-            delete frame;
-        }
-    }
-}
-
-#endif
 
 void Ieee80211MgmtAPExtended::handleAuthenticationFrame(Ieee80211AuthenticationFrame *frame)
 {

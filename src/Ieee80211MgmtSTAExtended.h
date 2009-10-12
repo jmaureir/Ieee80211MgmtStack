@@ -69,9 +69,11 @@ class INET_API Ieee80211MgmtSTAExtended : public Ieee80211MgmtBase
     class AssociatedAPInfo : public APInfo {
     public:
         int receiveSequence;
+        bool isAssociated;
         cMessage *beaconTimeoutMsg;
+        cMessage *assocTimeoutMsg; // if non-NULL: association is in progress
 
-        AssociatedAPInfo() : APInfo() {receiveSequence=0; beaconTimeoutMsg=NULL;}
+        AssociatedAPInfo() : APInfo() {receiveSequence=0; isAssociated = false; beaconTimeoutMsg=NULL; assocTimeoutMsg=NULL;}
         AssociatedAPInfo(const AssociatedAPInfo& assoc_ap) : APInfo(assoc_ap) {receiveSequence=0; beaconTimeoutMsg=NULL;}
 
         friend std::ostream& operator<<(std::ostream& os, const Ieee80211MgmtSTAExtended::AssociatedAPInfo& assocAP) {
@@ -115,8 +117,7 @@ class INET_API Ieee80211MgmtSTAExtended : public Ieee80211MgmtBase
     AccessPointList apList;
 
     // associated Access Point
-    bool isAssociated;
-    cMessage *assocTimeoutMsg; // if non-NULL: association is in progress
+    bool isAssociated;         // is the mgmtModule is associated
     AssociatedAPInfo assocAP;
 
     double max_beacons_missed; // number of max beacon missed to notify the agent about beacon_lost event

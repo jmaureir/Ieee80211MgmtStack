@@ -26,7 +26,7 @@ simple Ieee80211AgentSTAExtended like Ieee80211AgentInterface
         double maxChannelTime @unit("s") = default(0.3s); // channel time for passive scanning, and max channel time for active scanning
         double authenticationTimeout @unit("s") = default(5s); // timeout for the authentication procedure
         double associationTimeout @unit("s") = default(5s); // timeout for the association procedure
-        double startingTime @unit("s") = default(uniform(0s,5s)); // agent starting time.
+        double startingTime @unit("s") = default(uniform(0s,5s)); // agent starting time. 0 to disable the agent
         string default_ssid            = default(""); // default ssid
  		@display("i=block/control");
     gates:

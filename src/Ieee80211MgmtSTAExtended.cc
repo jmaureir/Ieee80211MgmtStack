@@ -61,7 +61,6 @@ void Ieee80211MgmtSTAExtended::initialize(int stage)
     {
         isScanning = false;
         isAssociated = false;
-        assocTimeoutMsg = NULL;
 
         nb = NotificationBoardAccess().get();
 
@@ -166,14 +165,13 @@ void Ieee80211MgmtSTAExtended::handleTimer(cMessage *msg)
     }
 }
 
-void Ieee80211MgmtSTAExtended::handleUpperMessage(cPacket *msg)
-{
+void Ieee80211MgmtSTAExtended::handleUpperMessage(cPacket *msg) {
 	if (this->isAssociated) {
-		Ieee80211DataFrame *frame = encapsulate(msg);
+		Ieee80211DataFrame *frame = this->encapsulate(msg);
 		sendOrEnqueue(frame);
 	} else {
 		EV << "STA not associated, buffering the packet" << endl;
-		Ieee80211DataFrame *frame = encapsulate(msg);
+		Ieee80211DataFrame *frame = this->encapsulate(msg);
 		enqueue(frame);
 	}
 }
@@ -362,7 +360,7 @@ void Ieee80211MgmtSTAExtended::startAuthentication(APInfo *ap, simtime_t timeout
 
 void Ieee80211MgmtSTAExtended::startAssociation(APInfo *ap, simtime_t timeout)
 {
-    if (isAssociated || assocTimeoutMsg)
+    if (isAssociated || this->assocAP.assocTimeoutMsg)
         error("startAssociation: already associated or association currently in progress");
     if (!ap->isAuthenticated)
         error("startAssociation: not yet authenticated with AP address=", ap->address.str().c_str());
@@ -386,10 +384,10 @@ void Ieee80211MgmtSTAExtended::startAssociation(APInfo *ap, simtime_t timeout)
     sendManagementFrame(frame, ap->address);
 
     // schedule timeout
-    ASSERT(assocTimeoutMsg==NULL);
-    assocTimeoutMsg = new cMessage("assocTimeout", MK_ASSOC_TIMEOUT);
-    assocTimeoutMsg->setContextPointer(ap);
-    scheduleAt(simTime()+timeout, assocTimeoutMsg);
+    ASSERT(this->assocAP.assocTimeoutMsg==NULL);
+    this->assocAP.assocTimeoutMsg = new cMessage("assocTimeout", MK_ASSOC_TIMEOUT);
+    this->assocAP.assocTimeoutMsg->setContextPointer(ap);
+    scheduleAt(simTime()+timeout, this->assocAP.assocTimeoutMsg);
 }
 
 void Ieee80211MgmtSTAExtended::receiveChangeNotification(int category, const cPolymorphic *details)
@@ -419,11 +417,11 @@ void Ieee80211MgmtSTAExtended::processScanCommand(Ieee80211Prim_ScanRequest *ctr
     {
         disassociate();
     }
-    else if (assocTimeoutMsg)
+    else if (this->assocAP.assocTimeoutMsg)
     {
         EV << "Canceling ongoing association process\n";
-        delete cancelEvent(assocTimeoutMsg);
-        assocTimeoutMsg = NULL;
+        delete cancelEvent(this->assocAP.assocTimeoutMsg);
+        this->assocAP.assocTimeoutMsg = NULL;
     }
 
     // log the state change
@@ -472,15 +470,10 @@ bool Ieee80211MgmtSTAExtended::scanNextChannel()
         return true; // we're done
     }
 
-    int currentCh = scanning.channelList[scanning.currentChannelIndex];
-	//std::cout << simTime() << " " << myAddress << " *** END SCANNING CHANNEL " << currentCh << endl;
-
     // tune to next channel
     int newChannel = scanning.channelList[++scanning.currentChannelIndex];
     changeChannel(newChannel);
     scanning.busyChannelDetected = false;
-
-    //std::cout << simTime() << " " << myAddress << "*** START SCANNING CHANNEL " << newChannel << endl;
 
     if (scanning.activeScan)
     {
@@ -592,15 +585,15 @@ void Ieee80211MgmtSTAExtended::processDisassociateCommand(Ieee80211Prim_Disassoc
     {
         disassociate();
     }
-    else if (assocTimeoutMsg)
+    else if (this->assocAP.assocTimeoutMsg)
     {
         // pending association
-        delete cancelEvent(assocTimeoutMsg);
-        assocTimeoutMsg = NULL;
+        delete cancelEvent(this->assocAP.assocTimeoutMsg);
+        this->assocAP.assocTimeoutMsg = NULL;
     }
 
     // create and send disassociation request
-    Ieee80211DisassociationFrame *frame = new Ieee80211DisassociationFrame("Disass");
+    Ieee80211DisassociationFrame *frame = new Ieee80211DisassociationFrame("Disassociation");
     frame->getBody().setReasonCode(ctrl->getReasonCode());
     sendManagementFrame(frame, address);
 }
@@ -642,7 +635,12 @@ int Ieee80211MgmtSTAExtended::statusCodeToPrimResultCode(int statusCode)
 
 void Ieee80211MgmtSTAExtended::handleDataFrame(Ieee80211DataFrame *frame)
 {
-    sendUp(decapsulate(frame));
+	cPacket* payload = decapsulate(frame);
+	if (payload!=NULL) {
+	    sendUp(payload);
+	} else {
+		EV << "decapsulation gives NULL. so discarding this frame" << endl;
+	}
 }
 
 void Ieee80211MgmtSTAExtended::handleAuthenticationFrame(Ieee80211AuthenticationFrame *frame)
@@ -757,7 +755,7 @@ void Ieee80211MgmtSTAExtended::handleAssociationResponseFrame(Ieee80211Associati
 {
     EV << "Received Association Response frame\n";
 
-    if (!assocTimeoutMsg)
+    if (!this->assocAP.assocTimeoutMsg)
     {
         EV << "No association in progress, ignoring frame\n";
         delete frame;
@@ -785,8 +783,8 @@ void Ieee80211MgmtSTAExtended::handleAssociationResponseFrame(Ieee80211Associati
         assocAP = AssociatedAPInfo();
     }
 
-    delete cancelEvent(assocTimeoutMsg);
-    assocTimeoutMsg = NULL;
+    delete cancelEvent(this->assocAP.assocTimeoutMsg);
+    this->assocAP.assocTimeoutMsg = NULL;
 
     if (statusCode!=SC_SUCCESSFUL)
     {
@@ -797,8 +795,9 @@ void Ieee80211MgmtSTAExtended::handleAssociationResponseFrame(Ieee80211Associati
         EV << "Association successful, AP address=" << ap->address << "\n";
 
         // change our state to "associated"
-        isAssociated = true;
         (APInfo&)assocAP = (*ap);
+        isAssociated = true;
+        assocAP.isAssociated = true;
 
         // log the state change
     	connStates.record(mgmt_state);
@@ -831,11 +830,11 @@ void Ieee80211MgmtSTAExtended::handleDisassociationFrame(Ieee80211Disassociation
     EV << "Received Disassociation frame\n";
     const MACAddress& address = frame->getAddress3();  // source address
 
-    if (assocTimeoutMsg)
+    if (this->assocAP.assocTimeoutMsg)
     {
         // pending association
-        delete cancelEvent(assocTimeoutMsg);
-        assocTimeoutMsg = NULL;
+        delete cancelEvent(this->assocAP.assocTimeoutMsg);
+        this->assocAP.assocTimeoutMsg = NULL;
     }
     if (!isAssociated || address!=assocAP.address)
     {
@@ -847,7 +846,11 @@ void Ieee80211MgmtSTAExtended::handleDisassociationFrame(Ieee80211Disassociation
     EV << "Setting isAssociated flag to false\n";
     isAssociated = false;
     delete cancelEvent(assocAP.beaconTimeoutMsg);
+    assocAP.isAssociated = false;
     assocAP.beaconTimeoutMsg = NULL;
+
+    // Notify the Dissassociation
+    nb->fireChangeNotification(NF_LINK_BREAK,this->myEntry);
 }
 
 void Ieee80211MgmtSTAExtended::handleBeaconFrame(Ieee80211BeaconFrame *frame)

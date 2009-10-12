@@ -36,8 +36,14 @@ void Ieee80211AgentSTAExtended::initialize(int stage)
         NotificationBoard *nb = NotificationBoardAccess().get();
         nb->subscribe(this, NF_L2_BEACON_LOST);
 
-        // JcM Fix: start up: send scan request according the starting time
-        scheduleAt(simTime()+startingTime, new cMessage("startUp", MK_STARTUP));
+        // JcM add: allow to disable the agent
+		// startingTime > 0 to engage the agent
+        if (startingTime!=0) {
+			// JcM Fix: start up: send scan request according the starting time
+			scheduleAt(simTime()+startingTime, new cMessage("startUp", MK_STARTUP));
+        } else {
+        	EV << "Agent Disabled" << endl;
+        }
 
     }
     else if (stage==1)
@@ -71,23 +77,18 @@ void Ieee80211AgentSTAExtended::initialize(int stage)
 
 void Ieee80211AgentSTAExtended::handleMessage(cMessage *msg)
 {
-    if (msg->isSelfMessage())
-        handleTimer(msg);
-    else
-        handleResponse(msg);
+    if (msg->isSelfMessage()) {
+        this->handleTimer(msg);
+    } else
+        this->handleResponse(msg);
 }
 
 void Ieee80211AgentSTAExtended::handleTimer(cMessage *msg)
 {
-    if (msg->getKind()==MK_STARTUP)
-    {
+    if (msg->getKind()==MK_STARTUP) {
         EV << "Starting up\n";
         sendScanRequest();
         delete msg;
-    }
-    else
-    {
-        error("internal error: unrecognized timer '%s'", msg->getName());
     }
 }
 
@@ -298,6 +299,8 @@ void Ieee80211AgentSTAExtended::processAssociateConfirm(Ieee80211Prim_AssociateC
         EV << "Association successful\n";
         // we are happy!
         getParentModule()->getParentModule()->bubble("Associated with AP");
+
+        // notify the association
     }
 }
 

@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2006 Andras Varga
+// Copyright (C) 2006 Andras Varga nad Juan-Carlos Maureira
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -28,7 +28,7 @@
  * Used in 802.11 infrastructure mode: handles management frames for
  * an access point (AP). See corresponding NED file for a detailed description.
  *
- * @author Andras Varga
+ * @author Andras Varga and Juan-Carlos Maureira
  */
 class INET_API Ieee80211MgmtAPExtended : public Ieee80211MgmtAPBase
 {
