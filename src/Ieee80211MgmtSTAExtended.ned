@@ -8,7 +8,7 @@ simple Ieee80211MgmtSTAExtended like Ieee80211MgmtInterface
 {
     parameters:
         int frameCapacity = default(100); // maximum queue length
-        double max_beacons_missed = default(3.5); // maximum number of beacon missed to notify agent about beacon lost event
+        double max_beacons_missed = default(5); // maximum number of beacon missed to notify agent about beacon lost event
         @display("i=block/cogwheel");
     gates:
         input uppergateIn;
