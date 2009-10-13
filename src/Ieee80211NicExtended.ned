@@ -27,7 +27,7 @@ module Ieee80211NicExtended
 {
     parameters:
         string mgmtType; // name of the management module type
-        @display("bgb=297,326;i=block/ifcard");
+        @display("bgb=220,326;i=block/ifcard");
     gates:
         input uppergateIn; // to upper layers
         output uppergateOut; // from upper layers
