@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2006 Andras Varga
+// Copyright (C) 2006 Andras Varga and Juan-Carlos Maureira
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -21,15 +21,12 @@
 // an access point (AP). It relies on a connected Ieee80211Mac for actual
 // reception and transmission of frames.
 //
-// When simulating an AP that has other (Ethernet or wireless) interfaces
-// as well, this module can be connected to a MACRelayUnit which performs
-// bridging of Ethernet frames. This module will perform conversion from/to
-// EtherFrame for MACRelayUnit.
+// TODO: explain the encapsulation change
 //
 // This module never switches channels, that is, it will operate on the channel
 // the physical layer is configured for (see channelNumber in Ieee80211Radio).
 //
-// @author Andras Varga
+// @author Andras Varga and Juan-Carlos Maureira
 //
 simple Ieee80211MgmtAPExtended like Ieee80211MgmtInterface
 {
@@ -41,8 +38,8 @@ simple Ieee80211MgmtAPExtended like Ieee80211MgmtInterface
         //dataRate: numeric; XXX TBD
         @display("i=block/cogwheel");
     gates:
-        input uppergateIn; // from MACRelayUnit; can be left unconnected
-        output uppergateOut; // to MACRelayUnit; can be left unconnected
+        input uppergateIn; // from upper layers; can be unconnected
+        output uppergateOut; // to upper layers; can be unconnected
         input macIn; // from Ieee80211Mac
         output macOut; // to Ieee80211Mac
         

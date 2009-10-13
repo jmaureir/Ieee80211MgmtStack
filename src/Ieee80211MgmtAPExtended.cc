@@ -190,7 +190,7 @@ void Ieee80211MgmtAPExtended::handleDataFrame(Ieee80211DataFrame *frame)
 
 		// set the control info
 		Ieee802Ctrl *ctrl = new Ieee802Ctrl();
-		ctrl->setSrc(frame->getAddress4());
+		ctrl->setSrc(frame->getTransmitterAddress());
 		ctrl->setDest(frame->getAddress3());
 
 		payload->setControlInfo(ctrl);
