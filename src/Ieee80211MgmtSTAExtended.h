@@ -7,7 +7,7 @@
 #include "Ieee80211Primitives_m.h"
 #include "Radio80211aControlInfo_m.h"
 
-// Notification class of Updated info in the associatead AP
+// Notification class of Updated info in the associated AP
 #define NF_L2_ASSOCIATED_AP_UPDATE     100        // when the associated AP info is updated (currently Ieee80211)
 
 class INET_API Ieee80211MgmtSTAExtended : public Ieee80211MgmtBase
@@ -123,6 +123,11 @@ class INET_API Ieee80211MgmtSTAExtended : public Ieee80211MgmtBase
     double max_beacons_missed; // number of max beacon missed to notify the agent about beacon_lost event
 
   protected:
+
+	~Ieee80211MgmtSTAExtended() {
+
+	}
+
     virtual int numInitStages() const {return 2;}
     virtual void initialize(int);
 
