@@ -898,7 +898,8 @@ void Ieee80211MgmtSTAExtended::handleBeaconFrame(Ieee80211BeaconFrame *frame)
 
         EV << "Beacon is from associated AP, restarting beacon timeout timer\n";
 
-    	double rxPWdB = 10 * log(rxPower);
+    	double rxPWdB = 10 * log10(rxPower);
+
     	rcvdPowerVectordB.record(rxPWdB);
     	rcvdPowerVectormW.record(rxPower);
 

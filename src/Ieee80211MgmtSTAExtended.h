@@ -10,8 +10,7 @@
 // Notification class of Updated info in the associated AP
 #define NF_L2_ASSOCIATED_AP_UPDATE     100        // when the associated AP info is updated (currently Ieee80211)
 
-class INET_API Ieee80211MgmtSTAExtended : public Ieee80211MgmtBase
-{
+class INET_API Ieee80211MgmtSTAExtended : public Ieee80211MgmtBase {
   public:
     //
     // Encapsulates information about the ongoing scanning process
