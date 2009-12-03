@@ -108,6 +108,7 @@ void Ieee80211MgmtSTAExtended::handleTimer(cMessage *msg)
         APInfo *ap = (APInfo *)msg->getContextPointer();
         EV << "Authentication timed out, AP address = " << ap->address << "\n";
 
+        ap->authTimeoutMsg = NULL;
         // send back failure report to agent
         sendAuthenticationConfirm(ap, PRC_TIMEOUT);
     }
@@ -142,13 +143,13 @@ void Ieee80211MgmtSTAExtended::handleTimer(cMessage *msg)
         delete msg;
         if (scanning.busyChannelDetected)
         {
-            EV << "******************* Busy channel detected during minChannelTime, continuing listening until maxChannelTime elapses\n";
+            EV << "Busy channel detected during minChannelTime, continuing listening until maxChannelTime elapses\n";
             cMessage *timerMsg = new cMessage("maxChannelTime", MK_SCAN_MAXCHANNELTIME);
             scheduleAt(simTime()+scanning.maxChannelTime - scanning.minChannelTime, timerMsg);
         }
         else
         {
-        	EV << "******************* Channel was empty during minChannelTime, going to next channel\n";
+        	EV << "Channel was empty during minChannelTime, going to next channel\n";
             bool done = scanNextChannel();
             if (done)
                 sendScanConfirm(); // send back response to agents' "scan" command
