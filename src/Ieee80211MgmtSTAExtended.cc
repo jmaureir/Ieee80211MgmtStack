@@ -636,11 +636,16 @@ int Ieee80211MgmtSTAExtended::statusCodeToPrimResultCode(int statusCode)
 
 void Ieee80211MgmtSTAExtended::handleDataFrame(Ieee80211DataFrame *frame)
 {
-	cPacket* payload = decapsulate(frame);
-	if (payload!=NULL) {
-	    sendUp(payload);
+	if (this->isAssociated) {
+		cPacket* payload = decapsulate(frame);
+		if (payload!=NULL) {
+			sendUp(payload);
+		} else {
+			EV << "decapsulation gives NULL. so discarding this frame" << endl;
+		}
 	} else {
-		EV << "decapsulation gives NULL. so discarding this frame" << endl;
+		EV << "STA not associated. discarding frame" << endl;
+		delete frame;
 	}
 }
 
