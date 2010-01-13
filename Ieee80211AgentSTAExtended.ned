@@ -1,4 +1,4 @@
-
+package Ieee80211MgmtStack;
 //
 // Used in 802.11 infrastructure mode: in a station (STA), this module
 // controls channel scanning, association and handovers, by sending commands
@@ -6,15 +6,13 @@
 //
 // @author Andras Varga
 //
-// Modified by Juan-Carlos Maureira. INRIA 2009
+// @author: Modified by Juan-Carlos Maureira. INRIA 2009
 // - correct the dissasociation and back to scanning behavior
 // - add a fixed ssid to connect with.
 // - Agent status logging vector.
 // - Agent starting time random. (avoid all the STAs starts to scan at the same time)
 // - Agent Interface Implementation to allow polymorphism and dynamic agent loading
 //
-
-import Ieee80211AgentInterface;
 
 simple Ieee80211AgentSTAExtended like Ieee80211AgentInterface
 {

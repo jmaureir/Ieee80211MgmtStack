@@ -1,3 +1,4 @@
+package Ieee80211MgmtStack.nodes;
 //
 // Copyright (C) 2008 INRIA Sophia-Antipolis
 // Juan-Carlos Maureira
@@ -33,6 +34,10 @@ import inet.transport.udp.UDP;
 import inet.transport.tcp.TCP;
 import inet.mobility.NullMobility;
 import inet.linklayer.ieee80211.Ieee80211Nic;
+
+import Ieee80211MgmtStack.Ieee80211NicExtended;
+import Ieee80211MgmtStack.Ieee80211AgentInterface;
+
 //
 // \Wireless IP router.
 //

@@ -1,3 +1,4 @@
+package Ieee80211MgmtStack;
 //
 // Copyright (C) 2006 Juan-Carlos Maureira
 //

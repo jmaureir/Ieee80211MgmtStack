@@ -1,3 +1,4 @@
+package Ieee80211MgmtStack;
 //
 // Copyright (C) 2006 Andras Varga and Juan-Carlos Maureira
 //

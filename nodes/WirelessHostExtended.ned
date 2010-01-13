@@ -1,3 +1,4 @@
+package Ieee80211MgmtStack.nodes;
 //
 // 2009 Juan-Carlos Maureira
 //
@@ -19,6 +20,9 @@ import inet.transport.tcp.TCP;
 import inet.transport.udp.UDP;
 
 import inet.linklayer.ieee80211.mgmt.Ieee80211AgentSTA;
+
+import Ieee80211MgmtStack.Ieee80211NicExtended;
+import Ieee80211MgmtStack.Ieee80211AgentInterface;
 
 module WirelessHostExtended
 {
