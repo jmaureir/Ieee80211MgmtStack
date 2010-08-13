@@ -74,6 +74,11 @@ void Ieee80211MgmtBaseExtended::initialize(int stage)
     		myEntry->setMACAddress(myAddress);
     		myEntry->setName(getParentModule()->getName());
     	}
+        if (myEntry==NULL) {
+        	EV << "No Interface Entry found" << endl;
+        } else {
+        	EV << "Interface Entry FOUND!" << endl;
+        }
     }
 }
 

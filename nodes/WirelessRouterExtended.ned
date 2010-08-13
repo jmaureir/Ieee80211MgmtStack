@@ -140,7 +140,7 @@ module WirelessRouterExtended
         udp.ipOut --> networkLayer.udpIn;
         networkLayer.udpOut --> udp.ipIn;
         tcp.ipOut --> networkLayer.tcpIn;
-        networkLayer.TCPOut --> tcp.ipIn;
+        networkLayer.tcpOut --> tcp.ipIn;
         pingApp.pingOut --> networkLayer.pingIn;
         networkLayer.pingOut --> pingApp.pingIn;
         networkLayer.ifOut++ --> wlan.uppergateIn;
