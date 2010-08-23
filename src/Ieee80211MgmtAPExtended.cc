@@ -59,7 +59,12 @@ void Ieee80211MgmtAPExtended::initialize(int stage)
 
         // start beacon timer (randomize startup time)
         beaconTimer = new cMessage("beaconTimer");
-        scheduleAt(simTime()+uniform(0,beaconInterval), beaconTimer);
+
+        simtime_t startBeaconing = simTime()+uniform(0,beaconInterval);
+
+        scheduleAt(startBeaconing, beaconTimer);
+
+        EV << "Starting Beaconing at " << startBeaconing << endl;
     }
 }
 
