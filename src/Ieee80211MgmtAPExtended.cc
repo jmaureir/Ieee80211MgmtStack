@@ -59,11 +59,8 @@ void Ieee80211MgmtAPExtended::initialize(int stage)
 
         // start beacon timer (randomize startup time)
         beaconTimer = new cMessage("beaconTimer");
-
         simtime_t startBeaconing = simTime()+uniform(0,beaconInterval);
-
         scheduleAt(startBeaconing, beaconTimer);
-
         EV << "Starting Beaconing at " << startBeaconing << endl;
     }
 }
@@ -73,7 +70,24 @@ void Ieee80211MgmtAPExtended::handleTimer(cMessage *msg)
     if (msg==beaconTimer)
     {
         sendBeacon();
-        scheduleAt(simTime()+beaconInterval, beaconTimer);
+
+        // add an small variability in the beacon sending to simualte
+        // the real distribution of beacon arrival, which has an small variance
+        // arround the beaconInterval.
+
+        double beacon_sd = 0.0003;
+        bool randomize_beacons = true;
+
+        simtime_t next_beacon_event = beaconInterval;
+        if (randomize_beacons) {
+        	next_beacon_event = normal(beaconInterval,beacon_sd);
+        }
+        simtime_t next_beacon_time = simTime() + next_beacon_event;
+
+        EV << "Next Beacon Event in : " << next_beacon_event << endl;
+
+        scheduleAt(next_beacon_time, beaconTimer);
+        EV << "Scheduling next beacon to be send at " << next_beacon_time << endl;
     }
     else
     {
