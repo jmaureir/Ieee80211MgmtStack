@@ -78,6 +78,7 @@ void Ieee80211MgmtAPExtended::handleTimer(cMessage *msg)
         bool randomize_beacons = par("randomizeBeacons");
 
         simtime_t next_beacon_event = beaconInterval;
+
         if (randomize_beacons) {
             double beacon_sd = par("beaconVariance");
         	next_beacon_event = normal(beaconInterval,beacon_sd);
