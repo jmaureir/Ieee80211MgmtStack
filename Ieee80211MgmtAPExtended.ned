@@ -36,6 +36,8 @@ simple Ieee80211MgmtAPExtended like Ieee80211MgmtInterface
         double beaconInterval @unit("s") = default(100ms);
         int frameCapacity = default(100); // maximum queue length
         int numAuthSteps = default(4); // use 2 for Open System auth, 4 for WEP
+        bool randomizeBeacons = default(false); // randomize beacons
+        double beaconVariance = default(0);  // used when randomize beacons 
         //dataRate: numeric; XXX TBD
         @display("i=block/cogwheel");
     gates:
