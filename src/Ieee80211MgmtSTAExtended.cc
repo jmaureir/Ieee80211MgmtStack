@@ -361,8 +361,15 @@ void Ieee80211MgmtSTAExtended::startAuthentication(APInfo *ap, simtime_t timeout
 
 void Ieee80211MgmtSTAExtended::startAssociation(APInfo *ap, simtime_t timeout)
 {
-    if (isAssociated || this->assocAP.assocTimeoutMsg)
-        error("startAssociation: already associated or association currently in progress");
+    if (isAssociated || this->assocAP.assocTimeoutMsg) {
+    	if (this->assocAP.assocTimeoutMsg) {
+			std::cout << "association in progress" << endl;
+    	} else {
+    		std::cout << "already associated. discarding" << endl;
+    	}
+    	EV << "startAssociation: already associated or association currently in progress" << endl;
+		return;
+    }
     if (!ap->isAuthenticated)
         error("startAssociation: not yet authenticated with AP address=", ap->address.str().c_str());
 
