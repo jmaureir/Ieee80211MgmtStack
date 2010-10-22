@@ -343,7 +343,8 @@ void Ieee80211MgmtAPExtended::handleAssociationRequestFrame(Ieee80211Association
 
     // mark STA as associated
     sta->status = ASSOCIATED; // XXX this should only take place when MAC receives the ACK for the response
-
+    // clean the authSequence
+    sta->authSeqExpected = 1;
     // send OK response
     Ieee80211AssociationResponseFrame *resp = new Ieee80211AssociationResponseFrame("AssocResp-OK");
     Ieee80211AssociationResponseFrameBody& body = resp->getBody();

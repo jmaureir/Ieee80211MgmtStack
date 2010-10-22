@@ -273,7 +273,7 @@ void Ieee80211AgentSTAExtended::processAuthenticateConfirm(Ieee80211Prim_Authent
     {
         EV << "Authentication error\n";
 
-        // try scanning again, maybe we'll have better luck next time, possibly with a different AP
+        //// try scanning again, maybe we'll have better luck next time, possibly with a different AP
         EV << "Going back to scanning\n";
         sendScanRequest();
     }
