@@ -96,6 +96,13 @@ class INET_API Ieee80211MgmtSTAExtended : public Ieee80211MgmtBase {
 	cOutVector mgmtQueueLenVec;
 	cOutVector rcvdPowerVectormW;
 	cOutVector rcvdPowerVectordB;
+	cOutVector handoverTimeVector;
+
+	simtime_t handover_start;
+	simtime_t handover_finish;
+	simtime_t handover_time;
+	int handover_count;
+
 
   protected:
 	// Paula Uribe: add radio reference
@@ -226,5 +233,3 @@ class INET_API Ieee80211MgmtSTAExtended : public Ieee80211MgmtBase {
 };
 
 #endif
-
-

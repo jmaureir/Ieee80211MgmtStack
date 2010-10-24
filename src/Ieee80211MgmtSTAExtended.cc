@@ -61,6 +61,10 @@ void Ieee80211MgmtSTAExtended::initialize(int stage)
     {
         isScanning = false;
         isAssociated = false;
+        handover_time = 0;
+        handover_start = 0;
+        handover_finish = 0;
+        handover_count = 0;
 
         nb = NotificationBoardAccess().get();
 
@@ -92,6 +96,8 @@ void Ieee80211MgmtSTAExtended::initialize(int stage)
 		// beacons rx power
 		rcvdPowerVectormW.setName("Beacons RxPower mW");
 		rcvdPowerVectordB.setName("Beacons RxPower dB");
+		// handover time vector
+		handoverTimeVector.setName("Handover Time");
     }
 }
 
@@ -316,6 +322,7 @@ void Ieee80211MgmtSTAExtended::beaconLost()
     EV << "Missed a few consecutive beacons -- AP is considered lost\n";
 
 	nb->fireChangeNotification(NF_L2_BEACON_LOST, myEntry);  //XXX use InterfaceEntry as detail, etc...
+
 }
 
 void Ieee80211MgmtSTAExtended::sendManagementFrame(Ieee80211ManagementFrame *frame, const MACAddress& address)
@@ -436,6 +443,11 @@ void Ieee80211MgmtSTAExtended::processScanCommand(Ieee80211Prim_ScanRequest *ctr
 	connStates.record(mgmt_state);
 	mgmt_state = SCANNING;
 	connStates.record(mgmt_state);
+
+	// record the starting of the handover operation
+	if (this->handover_start == 0) {
+		this->handover_start = simTime();
+	}
 
     // clear existing AP list (and cancel any pending authentications) -- we want to start with a clean page
     clearAPList();
@@ -821,6 +833,22 @@ void Ieee80211MgmtSTAExtended::handleAssociationResponseFrame(Ieee80211Associati
         assocAP.beaconTimeoutMsg = new cMessage("beaconTimeout", MK_BEACON_TIMEOUT);
 
         scheduleAt(simTime()+this->max_beacons_missed*assocAP.beaconInterval, assocAP.beaconTimeoutMsg);
+
+        if (this->handover_start > 0) {
+			// log the handover time
+			this->handover_count++;
+			this->handover_finish = simTime();
+
+			this->handover_time = this->handover_finish - this->handover_start;
+
+			this->handoverTimeVector.recordWithTimestamp(handover_count,this->handover_time);
+
+			handover_time = 0;
+			handover_start = 0;
+			handover_finish = 0;
+        } else {
+        	std::cout << "No starting handover time measured" << endl;
+        }
     }
 
     // report back to agent
