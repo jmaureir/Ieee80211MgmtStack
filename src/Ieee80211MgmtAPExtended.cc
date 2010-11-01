@@ -42,6 +42,8 @@ void Ieee80211MgmtAPExtended::initialize(int stage)
         ssid = par("ssid").stringValue();
         beaconInterval = par("beaconInterval");
         numAuthSteps = par("numAuthSteps");
+        smartBeacons = par("smartBeacons");
+
         if (numAuthSteps!=2 && numAuthSteps!=4)
             error("parameter 'numAuthSteps' (number of frames exchanged during authentication) must be 2 or 4, not %d", numAuthSteps);
         channelNumber = -1;  // value will arrive from physical layer in receiveChangeNotification()
@@ -59,39 +61,124 @@ void Ieee80211MgmtAPExtended::initialize(int stage)
 
         // start beacon timer (randomize startup time)
         beaconTimer = new cMessage("beaconTimer");
-        simtime_t startBeaconing = simTime()+uniform(0,beaconInterval);
-        scheduleAt(startBeaconing, beaconTimer);
-        EV << "Starting Beaconing at " << startBeaconing << endl;
+        if (!this->smartBeacons) {
+        	simtime_t startBeaconing = simTime()+uniform(0,beaconInterval);
+        	scheduleAt(startBeaconing, beaconTimer);
+        	EV << "Starting Beaconing at " << startBeaconing << endl;
+        	this->beaconActive = true;
+        } else {
+        	EV << "Smart beacons activated. wait for a probe request to start beaconing" << endl;
+        	this->beaconActive = false;
+        }
     }
 }
+
+void Ieee80211MgmtAPExtended::finalize() {
+
+	for(STAList::iterator it=this->staList.begin();it!=this->staList.end();it++) {
+		STAInfo* sta = &(it->second);
+		this->deleteSTAFromList(sta->address);
+	}
+	if (this->beaconTimer->isScheduled()) {
+		cancelEvent(this->beaconTimer);
+	}
+	delete(this->beaconTimer);
+}
+
+void Ieee80211MgmtAPExtended::scheduleBeaconTimer() {
+    if (this->beaconActive) {
+		bool randomize_beacons = par("randomizeBeacons");
+		 simtime_t next_beacon_event = beaconInterval;
+
+		 // add an small variability in the beacon sending to simulate
+		 // the real distribution of beacon arrival, which has an small variance
+		 // around the beaconInterval.
+
+		 if (randomize_beacons) {
+			 double beacon_sd = par("beaconVariance");
+			next_beacon_event = normal(beaconInterval,beacon_sd);
+		 }
+		 simtime_t next_beacon_time = simTime() + next_beacon_event;
+
+		 EV << "Next Beacon Event in : " << next_beacon_event << endl;
+
+		 if (!this->beaconTimer->isScheduled()) {
+			 scheduleAt(next_beacon_time, beaconTimer);
+			 EV << "Scheduling next beacon to be send at " << next_beacon_time << endl;
+		 } else {
+			 EV << "Beacon already scheduled. let is pass." << endl;
+		 }
+    } else {
+    	EV << "Beaconing disabled. ignoring request" << endl;
+    }
+}
+
+void Ieee80211MgmtAPExtended::scheduleSTADeauthTimer(MACAddress& mac) {
+
+    STAList::iterator it = staList.find(mac);
+    STAInfo *sta = (it==staList.end()) ? NULL : &(it->second);
+
+    if (!sta || sta->status==AUTHENTICATED) {
+
+    	if (sta->deauth_timer==NULL) {
+    		EV << "Creating the deauth timer" << endl;
+    		sta->deauth_timer = new STADeassocTimer();
+    		sta->deauth_timer->setMac(mac);
+    	}
+
+    	if (sta->deauth_timer->isScheduled()) {
+    		EV << "cancelling deauth timer and rescheduling it" << endl;
+    		cancelEvent(sta->deauth_timer);
+    	}
+    	EV << "Scheduling deauth timer for " << mac << endl;
+		// scheduling the deauth timer
+		simtime_t deauth_timeout = par("deauth_timeout");
+		this->scheduleAt(simTime() + deauth_timeout, sta->deauth_timer );
+    } else {
+    	EV << "STA " << mac << " not authenticated. discarding request of scheduling deauth timer" << endl;
+    }
+}
+
+void Ieee80211MgmtAPExtended::deleteSTAFromList(MACAddress& mac) {
+
+    STAList::iterator it = staList.find(mac);
+    STAInfo *sta = (it==staList.end()) ? NULL : &(it->second);
+
+    if (sta) {
+    	EV << "removing STA " << mac << " from STA List" << endl;
+    	if (sta->deauth_timer->isScheduled()) {
+    		cancelEvent(sta->deauth_timer);
+    	}
+		delete(sta->deauth_timer);
+    	this->staList.erase(mac);
+    } else {
+    	EV << "STA " << mac << " does not exist. can not be removed from sta list" << endl;
+    }
+}
+
 
 void Ieee80211MgmtAPExtended::handleTimer(cMessage *msg)
 {
     if (msg==beaconTimer)
     {
-        sendBeacon();
+        this->sendBeacon();
+       	this->scheduleBeaconTimer();
+       	return;
+    }
+    if (dynamic_cast<STADeassocTimer*>(msg)) {
+    	STADeassocTimer* timer = dynamic_cast<STADeassocTimer*>(msg);
+    	MACAddress mac = timer->getMac();
+		EV << "STA Deauth timer arrived for " << mac << endl;
+		this->deleteSTAFromList(mac);
 
-        // add an small variability in the beacon sending to simualte
-        // the real distribution of beacon arrival, which has an small variance
-        // arround the beaconInterval.
-
-        bool randomize_beacons = par("randomizeBeacons");
-
-        simtime_t next_beacon_event = beaconInterval;
-
-        if (randomize_beacons) {
-            double beacon_sd = par("beaconVariance");
-        	next_beacon_event = normal(beaconInterval,beacon_sd);
-        }
-        simtime_t next_beacon_time = simTime() + next_beacon_event;
-
-        EV << "Next Beacon Event in : " << next_beacon_event << endl;
-
-        scheduleAt(next_beacon_time, beaconTimer);
-        EV << "Scheduling next beacon to be send at " << next_beacon_time << endl;
+		if (this->staList.size()==0) {
+			// no more stations. disabling beaconing
+			this->beaconActive = false;
+		}
     }
     else
     {
+
         error("internal error: unrecognized timer '%s'", msg->getName());
     }
 }
@@ -197,6 +284,19 @@ void Ieee80211MgmtAPExtended::handleDataFrame(Ieee80211DataFrame *frame)
         return;
     }
 
+    // check if transmitter is in own list
+
+    STAList::iterator it_tx = staList.find(frame->getTransmitterAddress());
+    STAInfo *sta = (it_tx==staList.end()) ? NULL : &(it_tx->second);
+    if (sta && sta->status == ASSOCIATED) {
+    	// update the deauth timer
+    	this->scheduleSTADeauthTimer(sta->address);
+    } else {
+    	EV << "STA " << frame->getTransmitterAddress() << " not associated. discarding frame." << endl;
+    	delete(frame);
+    	return;
+    }
+
     // handle broadcast frames
     if (frame->getAddress3().isBroadcast()) {
         EV << "Handling broadcast frame\n";
@@ -264,6 +364,7 @@ void Ieee80211MgmtAPExtended::handleAuthenticationFrame(Ieee80211AuthenticationF
         sta = &staList[staAddress]; // this implicitly creates a new entry
         sta->address = staAddress;
         sta->status = NOT_AUTHENTICATED;
+        sta->deauth_timer = NULL;
         sta->authSeqExpected = 1;
     }
 
@@ -300,6 +401,8 @@ void Ieee80211MgmtAPExtended::handleAuthenticationFrame(Ieee80211AuthenticationF
     {
         sta->status = AUTHENTICATED; // XXX only when ACK of this frame arrives
         EV << "STA authenticated\n";
+
+        this->scheduleSTADeauthTimer(sta->address);
     }
     else
     {
@@ -320,6 +423,17 @@ void Ieee80211MgmtAPExtended::handleDeauthenticationFrame(Ieee80211Deauthenticat
         // mark STA as not authenticated; alternatively, it could also be removed from staList
         sta->status = NOT_AUTHENTICATED;
         sta->authSeqExpected = 1;
+        // remove the sta from the sta list
+        this->staList.erase(sta->address);
+
+        if (this->smartBeacons) {
+        	// check if there are still stations
+        	if (this->staList.size()==0) {
+        		// disable beaconing
+        		this->beaconActive = false;
+        	}
+        }
+
     }
 }
 
@@ -401,7 +515,8 @@ void Ieee80211MgmtAPExtended::handleDisassociationFrame(Ieee80211DisassociationF
 
     if (sta)
     {
-        sta->status = AUTHENTICATED;
+        sta->status = NOT_AUTHENTICATED;
+        deleteSTAFromList(sta->address);
     }
 }
 
@@ -432,6 +547,12 @@ void Ieee80211MgmtAPExtended::handleProbeRequestFrame(Ieee80211ProbeRequestFrame
     body.setBeaconInterval(beaconInterval);
     body.setChannelNumber(channelNumber);
     sendManagementFrame(resp, staAddress);
+
+    if (this->smartBeacons && !this->beaconActive) {
+    	EV << "SmartBeacons: Activating beaconing" << endl;
+        this->beaconActive = true;
+        this->scheduleBeaconTimer();
+    }
 }
 
 void Ieee80211MgmtAPExtended::handleProbeResponseFrame(Ieee80211ProbeResponseFrame *frame)

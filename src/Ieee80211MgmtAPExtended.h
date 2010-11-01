@@ -22,7 +22,7 @@
 #include <map>
 #include "Ieee80211MgmtAPBase.h"
 #include "NotificationBoard.h"
-
+#include "Ieee80211MgmtTimers_m.h"
 
 /**
  * Used in 802.11 infrastructure mode: handles management frames for
@@ -42,7 +42,7 @@ class INET_API Ieee80211MgmtAPExtended : public Ieee80211MgmtAPBase
         STAStatus status;
         int authSeqExpected;  // when NOT_AUTHENTICATED: transaction sequence number of next expected auth frame
         //int consecFailedTrans;  //XXX
-        //double expiry;          //XXX association should expire after a while if STA is silent?
+        STADeassocTimer* deauth_timer;
     };
 
     struct MAC_compare {
@@ -61,10 +61,17 @@ class INET_API Ieee80211MgmtAPExtended : public Ieee80211MgmtAPBase
     // state
     STAList staList; ///< list of STAs
     cMessage *beaconTimer;
+    bool smartBeacons;
+    bool beaconActive;
+
+    virtual void scheduleBeaconTimer();
+    virtual void scheduleSTADeauthTimer(MACAddress& mac);
+    virtual void deleteSTAFromList(MACAddress& mac);
 
   protected:
     virtual int numInitStages() const {return 2;}
     virtual void initialize(int);
+    virtual void finalize();
 
     /** Implements abstract Ieee80211MgmtBase method */
     virtual void handleTimer(cMessage *msg);
