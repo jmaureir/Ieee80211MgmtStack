@@ -466,10 +466,13 @@ void Ieee80211MgmtSTAExtended::processScanCommand(Ieee80211Prim_ScanRequest *ctr
         this->cleanAssociatedAPInfo();
     }
 
+    int mgmt_state_log = mgmt_state;
+
     // log the state change
-	connStates.record(mgmt_state);
+	connStates.record(mgmt_state_log);
 	mgmt_state = SCANNING;
-	connStates.record(mgmt_state);
+	mgmt_state_log = mgmt_state;
+	connStates.record(mgmt_state_log);
 
 	// record the starting of the handover operation
 	if (this->handover_start == 0) {
