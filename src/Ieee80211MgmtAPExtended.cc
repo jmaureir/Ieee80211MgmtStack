@@ -118,7 +118,7 @@ void Ieee80211MgmtAPExtended::scheduleSTADeauthTimer(MACAddress& mac) {
     STAList::iterator it = staList.find(mac);
     STAInfo *sta = (it==staList.end()) ? NULL : &(it->second);
 
-    if (!sta || sta->status==AUTHENTICATED) {
+    if (!sta || sta->status==ASSOCIATED) {
 
     	if (sta->deauth_timer==NULL) {
     		EV << "Creating the deauth timer" << endl;

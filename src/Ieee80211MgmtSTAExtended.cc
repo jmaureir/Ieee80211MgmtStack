@@ -21,6 +21,7 @@ Define_Module(Ieee80211MgmtSTAExtended);
 #define MK_SCAN_MINCHANNELTIME  4
 #define MK_SCAN_MAXCHANNELTIME  5
 #define MK_BEACON_TIMEOUT       6
+#define MK_KEEPALIVE_TIMEOUT    7
 
 std::ostream& operator<<(std::ostream& os, const Ieee80211MgmtSTAExtended::ScanningInfo& scanning)
 {
@@ -74,6 +75,7 @@ void Ieee80211MgmtSTAExtended::initialize(int stage)
         numChannels = cc->par("numChannels");
 
         max_beacons_missed = this->par("max_beacons_missed");
+        keep_alive = this->par("keep_alive");
 
         WATCH(isScanning);
         WATCH(isAssociated);
@@ -104,6 +106,18 @@ void Ieee80211MgmtSTAExtended::initialize(int stage)
 void Ieee80211MgmtSTAExtended::finish() {
 	// log the last state
 	connStates.record(mgmt_state);
+}
+
+void Ieee80211MgmtSTAExtended::cleanAssociatedAPInfo() {
+	if (assocAP.beaconTimeoutMsg!=NULL) {
+		delete cancelEvent(assocAP.beaconTimeoutMsg);
+	}
+    if (assocAP.keepaliveTimer!=NULL) {
+    	delete cancelEvent(assocAP.keepaliveTimer);
+    }
+    assocAP = AssociatedAPInfo();
+    assocAP.beaconTimeoutMsg = NULL;
+    assocAP.keepaliveTimer = NULL;
 }
 
 void Ieee80211MgmtSTAExtended::handleTimer(cMessage *msg)
@@ -165,7 +179,21 @@ void Ieee80211MgmtSTAExtended::handleTimer(cMessage *msg)
     {
         // missed a few consecutive beacons
         beaconLost();
+    } else if (msg->getKind()==MK_KEEPALIVE_TIMEOUT)
+    {
+    	if (this->assocAP.isAssociated) {
+			// keep alive timer arrived. send a null function data frame
+    		EV << "Keep Alive timeout. sending a null function data frame " << endl;
+    		this->sendNullFunctionFrame(this->assocAP.address);
+
+			// reschedule the keep alive timer
+			scheduleAt(simTime()+this->keep_alive, assocAP.keepaliveTimer);
+    	} else {
+    		EV << "Keep alive timer arrived without an associated AP. discarding it" << endl;
+    		delete(msg);
+    	}
     }
+
     else
     {
         error("internal error: unrecognized timer '%s'", msg->getName());
@@ -435,8 +463,7 @@ void Ieee80211MgmtSTAExtended::processScanCommand(Ieee80211Prim_ScanRequest *ctr
     else if (this->assocAP.assocTimeoutMsg)
     {
         EV << "Canceling ongoing association process\n";
-        delete cancelEvent(this->assocAP.assocTimeoutMsg);
-        this->assocAP.assocTimeoutMsg = NULL;
+        this->cleanAssociatedAPInfo();
     }
 
     // log the state change
@@ -622,10 +649,7 @@ void Ieee80211MgmtSTAExtended::disassociate()
 {
     ASSERT(isAssociated);
     isAssociated = false;
-    delete cancelEvent(assocAP.beaconTimeoutMsg);
-    assocAP.beaconTimeoutMsg = NULL;
-    assocAP = AssociatedAPInfo(); // clear it
-
+    this->cleanAssociatedAPInfo();
 }
 
 void Ieee80211MgmtSTAExtended::sendAuthenticationConfirm(APInfo *ap, int resultCode)
@@ -638,6 +662,21 @@ void Ieee80211MgmtSTAExtended::sendAuthenticationConfirm(APInfo *ap, int resultC
 void Ieee80211MgmtSTAExtended::sendAssociationConfirm(APInfo *ap, int resultCode)
 {
     sendConfirm(new Ieee80211Prim_AssociateConfirm(), resultCode);
+}
+
+void Ieee80211MgmtSTAExtended::sendNullFunctionFrame(const MACAddress& address) {
+	Ieee80211DataFrame *frame = new Ieee80211NullFunctionFrame("Null Function");
+
+	// frame goes to the AP
+	frame->setToDS(true);
+
+	// TODO: check the format of a null function frame.
+	// receiver is the AP
+	frame->setReceiverAddress(address);
+
+	// destination address is in address3 (the AP)
+	frame->setAddress3(address);
+	this->sendOrEnqueue(frame);
 }
 
 void Ieee80211MgmtSTAExtended::sendConfirm(Ieee80211PrimConfirm *confirm, int resultCode)
@@ -803,12 +842,11 @@ void Ieee80211MgmtSTAExtended::handleAssociationResponseFrame(Ieee80211Associati
     {
         EV << "Breaking existing association with AP address=" << assocAP.address << "\n";
         isAssociated = false;
-        delete cancelEvent(assocAP.beaconTimeoutMsg);
-        assocAP.beaconTimeoutMsg = NULL;
-        assocAP = AssociatedAPInfo();
+        this->cleanAssociatedAPInfo();
     }
-
-    delete cancelEvent(this->assocAP.assocTimeoutMsg);
+    if (this->assocAP.assocTimeoutMsg!=NULL) {
+    	delete cancelEvent(this->assocAP.assocTimeoutMsg);
+    }
     this->assocAP.assocTimeoutMsg = NULL;
 
     if (statusCode!=SC_SUCCESSFUL)
@@ -831,8 +869,10 @@ void Ieee80211MgmtSTAExtended::handleAssociationResponseFrame(Ieee80211Associati
 
         nb->fireChangeNotification(NF_L2_ASSOCIATED, myEntry);
         assocAP.beaconTimeoutMsg = new cMessage("beaconTimeout", MK_BEACON_TIMEOUT);
-
+        assocAP.keepaliveTimer = new cMessage("keepAliveTimeout", MK_KEEPALIVE_TIMEOUT);
         scheduleAt(simTime()+this->max_beacons_missed*assocAP.beaconInterval, assocAP.beaconTimeoutMsg);
+        // schedule the keep alive timer
+        scheduleAt(simTime()+this->keep_alive, assocAP.keepaliveTimer);
 
         if (this->handover_start > 0) {
 			// log the handover time

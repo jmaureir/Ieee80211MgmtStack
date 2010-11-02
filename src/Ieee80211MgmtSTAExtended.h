@@ -6,6 +6,10 @@
 #include "NotificationBoard.h"
 #include "Ieee80211Primitives_m.h"
 #include "Radio80211aControlInfo_m.h"
+#include "Ieee80211MgmtTimers_m.h"
+#include "Ieee80211Frames_m.h"
+
+//TODO: change the timers implementation to a real timer imp (with polymorfism)
 
 // Notification class of Updated info in the associated AP
 #define NF_L2_ASSOCIATED_AP_UPDATE     100        // when the associated AP info is updated (currently Ieee80211)
@@ -71,9 +75,10 @@ class INET_API Ieee80211MgmtSTAExtended : public Ieee80211MgmtBase {
         bool isAssociated;
         cMessage *beaconTimeoutMsg;
         cMessage *assocTimeoutMsg; // if non-NULL: association is in progress
+        cMessage *keepaliveTimer;
 
         AssociatedAPInfo() : APInfo() {receiveSequence=0; isAssociated = false; beaconTimeoutMsg=NULL; assocTimeoutMsg=NULL;}
-        AssociatedAPInfo(const AssociatedAPInfo& assoc_ap) : APInfo(assoc_ap) {receiveSequence=0; beaconTimeoutMsg=NULL;}
+        AssociatedAPInfo(const AssociatedAPInfo& assoc_ap) : APInfo(assoc_ap) {receiveSequence=0; beaconTimeoutMsg=NULL; keepaliveTimer = NULL;}
 
         friend std::ostream& operator<<(std::ostream& os, const Ieee80211MgmtSTAExtended::AssociatedAPInfo& assocAP) {
             os << "AP addr=" << assocAP.address
@@ -127,6 +132,9 @@ class INET_API Ieee80211MgmtSTAExtended : public Ieee80211MgmtBase {
     AssociatedAPInfo assocAP;
 
     double max_beacons_missed; // number of max beacon missed to notify the agent about beacon_lost event
+    simtime_t keep_alive;      // time interval to send a null data frame to the associated AP
+
+    virtual void cleanAssociatedAPInfo();
 
   protected:
 
@@ -195,6 +203,9 @@ class INET_API Ieee80211MgmtSTAExtended : public Ieee80211MgmtBase {
 
     /** Utility function: sends a management frame */
     virtual void sendManagementFrame(Ieee80211ManagementFrame *frame, const MACAddress& address);
+
+    /** Utility function: sends a null function data frame */
+    virtual void sendNullFunctionFrame(const MACAddress& address);
 
     /** Called by the NotificationBoard whenever a change occurs we're interested in */
     virtual void receiveChangeNotification(int category, const cPolymorphic *details);

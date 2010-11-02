@@ -58,10 +58,12 @@ OBJS = \
     $O/src/Ieee80211MgmtBaseExtended.o \
     $O/src/Ieee80211MgmtWDSExtended.o \
     $O/src/Ieee80211AgentSTAExtended.o \
+    $O/src/Ieee80211Frames_m.o \
     $O/src/Ieee80211MgmtTimers_m.o
 
 # Message files
 MSGFILES = \
+    src/Ieee80211Frames.msg \
     src/Ieee80211MgmtTimers.msg
 
 # Other makefile variables (-K)
@@ -138,6 +140,7 @@ depend:
 	$(MAKEDEPEND) $(INCLUDE_PATH) -f Makefile -P\$$O/ -- $(MSG_CC_FILES)  ./*.cc nodes/*.cc src/*.cc
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
+$O/src/Ieee80211MgmtFrames_m.o: src/Ieee80211MgmtFrames_m.cc
 $O/src/Ieee80211MgmtTimers_m.o: src/Ieee80211MgmtTimers_m.cc \
 	src/Ieee80211MgmtTimers_m.h \
 	$(INETMANET_PROJ)/src/base/INETDefs.h \
@@ -148,12 +151,12 @@ $O/src/Ieee80211MgmtAPExtended.o: src/Ieee80211MgmtAPExtended.cc \
 	$(INETMANET_PROJ)/src/linklayer/ethernet/EtherFrame_m.h \
 	$(INETMANET_PROJ)/src/networklayer/contract/IPControlInfo_m.h \
 	$(INETMANET_PROJ)/src/networklayer/contract/IPProtocolId_m.h \
-	$(INETMANET_PROJ)/src/linklayer/ieee80211/mgmt/Ieee80211MgmtFrames_m.h \
 	$(INETMANET_PROJ)/src/networklayer/ipv4/IP.h \
 	$(INETMANET_PROJ)/src/base/QueueBase.h \
 	$(INETMANET_PROJ)/src/base/NotificationBoard.h \
 	$(INETMANET_PROJ)/src/linklayer/ieee80211/mgmt/Ieee80211MgmtAPBase.h \
 	$(INETMANET_PROJ)/src/networklayer/common/InterfaceEntry.h \
+	src/Ieee80211Frames_m.h \
 	$(INETMANET_PROJ)/src/networklayer/contract/IPControlInfo.h \
 	$(INETMANET_PROJ)/src/networklayer/ipv4/IPRoute.h \
 	$(INETMANET_PROJ)/src/networklayer/ipv4/RoutingTableAccess.h \
@@ -193,7 +196,6 @@ $O/src/Ieee80211MgmtWDSExtended.o: src/Ieee80211MgmtWDSExtended.cc \
 	$(INETMANET_PROJ)/src/linklayer/ethernet/EtherFrame_m.h \
 	$(INETMANET_PROJ)/src/networklayer/contract/IPControlInfo_m.h \
 	$(INETMANET_PROJ)/src/networklayer/contract/IPProtocolId_m.h \
-	$(INETMANET_PROJ)/src/linklayer/ieee80211/mgmt/Ieee80211MgmtFrames_m.h \
 	$(INETMANET_PROJ)/src/networklayer/ipv4/IP.h \
 	$(INETMANET_PROJ)/src/base/QueueBase.h \
 	$(INETMANET_PROJ)/src/base/NotificationBoard.h \
@@ -230,9 +232,36 @@ $O/src/Ieee80211MgmtWDSExtended.o: src/Ieee80211MgmtWDSExtended.cc \
 	$(INETMANET_PROJ)/src/base/NotifierConsts.h \
 	$(INETMANET_PROJ)/src/linklayer/contract/MACAddress.h \
 	$(INETMANET_PROJ)/src/linklayer/ethernet/Ethernet.h
+$O/src/Ieee80211MgmtSTAExtended.o: src/Ieee80211MgmtSTAExtended.cc \
+	$(INETMANET_PROJ)/src/linklayer/mfcore/AirFrame_m.h \
+	$(INETMANET_PROJ)/src/linklayer/ieee80211/mgmt/Ieee80211Primitives_m.h \
+	$(INETMANET_PROJ)/src/base/NotificationBoard.h \
+	$(INETMANET_PROJ)/src/networklayer/common/InterfaceEntry.h \
+	src/Ieee80211Frames_m.h \
+	$(INETMANET_PROJ)/src/base/Coord.h \
+	$(INETMANET_PROJ)/src/base/INotifiable.h \
+	$(INETMANET_PROJ)/src/base/ModuleAccess.h \
+	$(INETMANET_PROJ)/src/linklayer/ieee80211/mac/Ieee80211Frame_m.h \
+	$(INETMANET_PROJ)/src/networklayer/common/InterfaceToken.h \
+	$(INETMANET_PROJ)/src/linklayer/contract/Ieee802Ctrl_m.h \
+	$(INETMANET_PROJ)/src/base/PassiveQueueBase.h \
+	$(INETMANET_PROJ)/src/linklayer/ieee80211/mgmt/Ieee80211MgmtBase.h \
+	$(INETMANET_PROJ)/src/base/INETDefs.h \
+	$(INETMANET_PROJ)/src/linklayer/contract/Radio80211aControlInfo_m.h \
+	$(INETMANET_PROJ)/src/linklayer/contract/RadioState.h \
+	$(INETMANET_PROJ)/src/base/IPassiveQueue.h \
+	$(INETMANET_PROJ)/src/linklayer/contract/PhyControlInfo_m.h \
+	src/Ieee80211MgmtSTAExtended.h \
+	src/Ieee80211MgmtTimers_m.h \
+	$(INETMANET_PROJ)/src/networklayer/common/IInterfaceTable.h \
+	$(INETMANET_PROJ)/src/base/NotifierConsts.h \
+	$(INETMANET_PROJ)/src/linklayer/contract/MACAddress.h \
+	$(INETMANET_PROJ)/src/world/ChannelControl.h \
+	$(INETMANET_PROJ)/src/util/FWMath.h
+$O/src/Ieee80211MgmtNOPFrame_m.o: src/Ieee80211MgmtNOPFrame_m.cc \
+	src/Ieee80211MgmtNOPFrame_m.h
 $O/src/Ieee80211MgmtBaseExtended.o: src/Ieee80211MgmtBaseExtended.cc \
 	$(INETMANET_PROJ)/src/linklayer/contract/Ieee802Ctrl_m.h \
-	$(INETMANET_PROJ)/src/linklayer/ieee80211/mgmt/Ieee80211MgmtFrames_m.h \
 	$(INETMANET_PROJ)/src/base/PassiveQueueBase.h \
 	$(INETMANET_PROJ)/src/base/INETDefs.h \
 	src/Ieee80211MgmtBaseExtended.h \
@@ -243,52 +272,30 @@ $O/src/Ieee80211MgmtBaseExtended.o: src/Ieee80211MgmtBaseExtended.cc \
 	$(INETMANET_PROJ)/src/base/ModuleAccess.h \
 	$(INETMANET_PROJ)/src/base/INotifiable.h \
 	$(INETMANET_PROJ)/src/base/NotifierConsts.h \
-	$(INETMANET_PROJ)/src/linklayer/ieee80211/mac/Ieee80211Frame_m.h \
 	$(INETMANET_PROJ)/src/networklayer/common/InterfaceTableAccess.h \
-	$(INETMANET_PROJ)/src/linklayer/contract/MACAddress.h \
-	$(INETMANET_PROJ)/src/networklayer/common/InterfaceToken.h
-$O/src/Ieee80211MgmtSTAExtended.o: src/Ieee80211MgmtSTAExtended.cc \
-	$(INETMANET_PROJ)/src/linklayer/contract/Ieee802Ctrl_m.h \
-	$(INETMANET_PROJ)/src/linklayer/ieee80211/mgmt/Ieee80211MgmtFrames_m.h \
-	$(INETMANET_PROJ)/src/base/PassiveQueueBase.h \
-	$(INETMANET_PROJ)/src/linklayer/ieee80211/mgmt/Ieee80211MgmtBase.h \
-	$(INETMANET_PROJ)/src/linklayer/mfcore/AirFrame_m.h \
-	$(INETMANET_PROJ)/src/base/INETDefs.h \
-	$(INETMANET_PROJ)/src/linklayer/ieee80211/mgmt/Ieee80211Primitives_m.h \
-	$(INETMANET_PROJ)/src/linklayer/contract/Radio80211aControlInfo_m.h \
-	$(INETMANET_PROJ)/src/base/NotificationBoard.h \
-	$(INETMANET_PROJ)/src/linklayer/contract/RadioState.h \
-	$(INETMANET_PROJ)/src/base/IPassiveQueue.h \
-	$(INETMANET_PROJ)/src/networklayer/common/InterfaceEntry.h \
-	src/Ieee80211MgmtSTAExtended.h \
-	$(INETMANET_PROJ)/src/linklayer/contract/PhyControlInfo_m.h \
-	$(INETMANET_PROJ)/src/networklayer/common/IInterfaceTable.h \
-	$(INETMANET_PROJ)/src/base/Coord.h \
-	$(INETMANET_PROJ)/src/base/INotifiable.h \
-	$(INETMANET_PROJ)/src/base/ModuleAccess.h \
-	$(INETMANET_PROJ)/src/base/NotifierConsts.h \
 	$(INETMANET_PROJ)/src/linklayer/ieee80211/mac/Ieee80211Frame_m.h \
-	$(INETMANET_PROJ)/src/util/FWMath.h \
-	$(INETMANET_PROJ)/src/world/ChannelControl.h \
 	$(INETMANET_PROJ)/src/linklayer/contract/MACAddress.h \
 	$(INETMANET_PROJ)/src/networklayer/common/InterfaceToken.h
 $O/src/MACTableTimers_m.o: src/MACTableTimers_m.cc \
 	src/MACTableTimers_m.h \
 	$(INETMANET_PROJ)/src/base/INETDefs.h \
 	$(INETMANET_PROJ)/src/linklayer/contract/MACAddress.h
-$O/src/Ieee80211AgentSTAExtended.o: src/Ieee80211AgentSTAExtended.cc \
-	$(INETMANET_PROJ)/src/linklayer/ieee80211/mgmt/Ieee80211MgmtFrames_m.h \
+$O/src/Ieee80211Frames_m.o: src/Ieee80211Frames_m.cc \
+	src/Ieee80211Frames_m.h \
 	$(INETMANET_PROJ)/src/base/INETDefs.h \
-	$(INETMANET_PROJ)/src/linklayer/ieee80211/mgmt/Ieee80211Primitives_m.h \
-	$(INETMANET_PROJ)/src/base/NotificationBoard.h \
+	$(INETMANET_PROJ)/src/linklayer/ieee80211/mac/Ieee80211Frame_m.h \
+	$(INETMANET_PROJ)/src/linklayer/contract/MACAddress.h
+$O/src/Ieee80211AgentSTAExtended.o: src/Ieee80211AgentSTAExtended.cc \
 	$(INETMANET_PROJ)/src/networklayer/common/InterfaceEntry.h \
 	src/Ieee80211AgentSTAExtended.h \
 	$(INETMANET_PROJ)/src/networklayer/common/IInterfaceTable.h \
-	$(INETMANET_PROJ)/src/base/NotifierConsts.h \
-	$(INETMANET_PROJ)/src/base/ModuleAccess.h \
+	$(INETMANET_PROJ)/src/base/INETDefs.h \
 	$(INETMANET_PROJ)/src/base/INotifiable.h \
+	$(INETMANET_PROJ)/src/base/ModuleAccess.h \
+	$(INETMANET_PROJ)/src/base/NotifierConsts.h \
 	$(INETMANET_PROJ)/src/networklayer/common/InterfaceTableAccess.h \
-	$(INETMANET_PROJ)/src/linklayer/ieee80211/mac/Ieee80211Frame_m.h \
+	$(INETMANET_PROJ)/src/linklayer/ieee80211/mgmt/Ieee80211Primitives_m.h \
+	$(INETMANET_PROJ)/src/base/NotificationBoard.h \
 	$(INETMANET_PROJ)/src/linklayer/contract/MACAddress.h \
 	$(INETMANET_PROJ)/src/networklayer/common/InterfaceToken.h
 

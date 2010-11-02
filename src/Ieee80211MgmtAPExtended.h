@@ -23,6 +23,7 @@
 #include "Ieee80211MgmtAPBase.h"
 #include "NotificationBoard.h"
 #include "Ieee80211MgmtTimers_m.h"
+#include "Ieee80211Frames_m.h"
 
 /**
  * Used in 802.11 infrastructure mode: handles management frames for
@@ -64,11 +65,12 @@ class INET_API Ieee80211MgmtAPExtended : public Ieee80211MgmtAPBase
     bool smartBeacons;
     bool beaconActive;
 
+  protected:
+
     virtual void scheduleBeaconTimer();
     virtual void scheduleSTADeauthTimer(MACAddress& mac);
     virtual void deleteSTAFromList(MACAddress& mac);
 
-  protected:
     virtual int numInitStages() const {return 2;}
     virtual void initialize(int);
     virtual void finalize();
