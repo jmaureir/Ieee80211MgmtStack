@@ -120,6 +120,15 @@ void Ieee80211MgmtSTAExtended::cleanAssociatedAPInfo() {
     assocAP.keepaliveTimer = NULL;
 }
 
+void Ieee80211MgmtSTAExtended::cleanMgmtQueue() {
+	EV << "purging " << this->mgmtQueue.length() << " from the mgmt queue" << endl;
+	while (this->mgmtQueue.length()>0) {
+		cMessage* m = (cMessage*)this->mgmtQueue.pop();
+		delete(m);
+	}
+}
+
+
 void Ieee80211MgmtSTAExtended::handleTimer(cMessage *msg)
 {
     if (msg->getKind()==MK_AUTH_TIMEOUT)
@@ -335,7 +344,11 @@ void Ieee80211MgmtSTAExtended::clearAPList()
 
 void Ieee80211MgmtSTAExtended::changeChannel(int channelNum)
 {
+
     EV << "Tuning to channel #" << channelNum << "\n";
+
+    // clean the mgmt queue
+    this->cleanMgmtQueue();
 
     // sending PHY_C_CONFIGURERADIO command to MAC
     PhyControlInfo *phyCtrl = new PhyControlInfo();

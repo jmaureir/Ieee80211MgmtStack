@@ -135,6 +135,7 @@ class INET_API Ieee80211MgmtSTAExtended : public Ieee80211MgmtBase {
     simtime_t keep_alive;      // time interval to send a null data frame to the associated AP
 
     virtual void cleanAssociatedAPInfo();
+    virtual void cleanMgmtQueue();
 
   protected:
 
