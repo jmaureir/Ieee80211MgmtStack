@@ -140,6 +140,7 @@ void Ieee80211MgmtSTAExtended::handleTimer(cMessage *msg)
         ap->authTimeoutMsg = NULL;
         // send back failure report to agent
         sendAuthenticationConfirm(ap, PRC_TIMEOUT);
+        delete(msg);
     }
     else if (msg->getKind()==MK_ASSOC_TIMEOUT)
     {
@@ -147,8 +148,12 @@ void Ieee80211MgmtSTAExtended::handleTimer(cMessage *msg)
         APInfo *ap = (APInfo *)msg->getContextPointer();
         EV << "Association timed out, AP address = " << ap->address << "\n";
 
+        this->assocAP.assocTimeoutMsg = NULL;
+        this->isAssociated = false;
+
         // send back failure report to agent
         sendAssociationConfirm(ap, PRC_TIMEOUT);
+        delete(msg);
     }
     else if (msg->getKind()==MK_SCAN_MAXCHANNELTIME)
     {
@@ -411,11 +416,10 @@ void Ieee80211MgmtSTAExtended::startAssociation(APInfo *ap, simtime_t timeout)
 {
     if (isAssociated || this->assocAP.assocTimeoutMsg) {
     	if (this->assocAP.assocTimeoutMsg) {
-			std::cout << "association in progress" << endl;
+			EV << "startAssociation: association in progress, discarding" << endl;
     	} else {
-    		std::cout << "already associated. discarding" << endl;
+    		EV << "startAssociation: already associated. discarding" << endl;
     	}
-    	EV << "startAssociation: already associated or association currently in progress" << endl;
 		return;
     }
     if (!ap->isAuthenticated)
@@ -443,6 +447,7 @@ void Ieee80211MgmtSTAExtended::startAssociation(APInfo *ap, simtime_t timeout)
     ASSERT(this->assocAP.assocTimeoutMsg==NULL);
     this->assocAP.assocTimeoutMsg = new cMessage("assocTimeout", MK_ASSOC_TIMEOUT);
     this->assocAP.assocTimeoutMsg->setContextPointer(ap);
+    this->assocAP.isAssociated = false;
     scheduleAt(simTime()+timeout, this->assocAP.assocTimeoutMsg);
 }
 
